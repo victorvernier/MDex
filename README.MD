@@ -21,7 +21,7 @@ This is a Python script that allows you to download manga chapters from MangaDex
 2.  Navigate to the project directory:
 
     ```bash
-    cd MDex2PDF
+    cd MDex
     ```
 
 3.  Install the dependencies:
@@ -35,7 +35,7 @@ This is a Python script that allows you to download manga chapters from MangaDex
 1.  Run the script:
 
     ```bash
-    python MDex2PDF.py
+    python MDex.py
     ```
 
 2.  Follow the instructions in the terminal to search and download manga.
