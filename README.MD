@@ -1,4 +1,4 @@
-# MDex2PDF - Manga Downloader
+# MDex - Manga Downloader
 
 This is a Python script that allows you to download manga chapters from MangaDex.
 
@@ -15,7 +15,7 @@ This is a Python script that allows you to download manga chapters from MangaDex
 1.  Clone this repository:
 
     ```bash
-    git clone [https://github.com/victorvernier/MDex2PDF.git](https://github.com/victorvernier/MDex2PDF.git)
+    git clone https://github.com/victorvernier/MDex.git
     ```
 
 2.  Navigate to the project directory:
