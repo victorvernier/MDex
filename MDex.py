@@ -1,4 +1,3 @@
-#MDex.py
 import os
 import requests
 from fuzzywuzzy import fuzz
@@ -7,14 +6,13 @@ from tqdm import tqdm
 import time
 import argparse
 from PIL import Image
-from fpdf import FPDF
 
 # Global Configurations
 API_BASE = "https://api.mangadex.org"
 DOWNLOAD_BASE_DIR = 'Downloads'
 MAX_RETRIES = 3
-MAX_THREADS = 4  # Valor padrão mais conservador para respeitar os limites
-CHAPTER_DOWNLOAD_DELAY = 0.5 # Delay entre o download de capítulos (em segundos)
+MAX_THREADS = 4  # More conservative default to respect MangaDex limits
+CHAPTER_DOWNLOAD_DELAY = 0.5 # Delay between chapter downloads (in seconds)
 
 def search_manga(title):
     """Searches for a manga by title and returns the ID and formatted name for saving."""
@@ -56,7 +54,7 @@ def search_manga(title):
     return None, None
 
 def get_chapters(manga_id, lang="pt-br"):
-    """Returns a list of available chapters in the specified language."""
+    """Returns a list of available chapters in the specified language (default: Brazilian Portuguese)."""
     chapters = []
     offset = 0
     limit = 100
@@ -137,49 +135,6 @@ def download_chapter_images(chapter_id, save_folder, chapter_number):
             pass
     return sorted(img_paths), chapter_path
 
-def create_pdf(image_paths, output_path):
-    """Cria um PDF com orientação automática por página e ajusta a largura da imagem."""
-    if not image_paths:
-        return False
-    try:
-        pdf = FPDF()
-
-        for img_path in image_paths:
-            try:
-                img = Image.open(img_path)
-                width, height = img.size
-
-                # Determina a orientação com base na proporção da imagem
-                orientation = 'P' if height > width else 'L'
-                pdf.add_page(orientation=orientation)
-
-                # Ajusta a largura da imagem para a largura da página, mantendo a proporção
-                page_width = pdf.w_pt
-                img_ratio = width / height
-                new_width = page_width
-                new_height = new_width / img_ratio
-
-                # Se a nova altura for maior que a altura da página, ajusta pela altura
-                page_height = pdf.h_pt
-                if new_height > page_height:
-                    new_height = page_height
-                    new_width = new_height * img_ratio
-
-                # Centraliza a imagem na página
-                x_pos = (page_width - new_width) / 2
-                y_pos = (page_height - new_height) / 2
-
-                pdf.image(img_path, x=x_pos, y=y_pos, w=new_width, h=new_height)
-
-            except Exception as e:
-                print(f"Erro ao adicionar imagem {img_path} ao PDF: {e}")
-
-        pdf.output(output_path, "F")
-        return True
-    except Exception as e:
-        print(f"Erro ao criar PDF {output_path}: {e}")
-        return False
-
 def select_chapters_by_range(chapters, start_chapter, end_chapter):
     """Selects chapters within a specified range."""
     selected_chapters = []
@@ -223,9 +178,9 @@ def main():
     manga_id, manga_title_sanitized = search_manga(title)
 
     if manga_id:
-        chapters = get_chapters(manga_id)
+        chapters = get_chapters(manga_id) # Defaults to 'pt-br'
         if not chapters:
-            print("⚠️ No chapters available in Portuguese.")
+            print("⚠️ No chapters available in Brazilian Portuguese.")
             return
 
         print("\n📖 Available Chapters:")
@@ -285,35 +240,30 @@ def main():
             manga_download_dir = os.path.join(DOWNLOAD_BASE_DIR, manga_title_sanitized)
             os.makedirs(manga_download_dir, exist_ok=True)
 
-            print("\n⚠️ Atenção: O valor padrão de MAX_THREADS foi definido para 4 para respeitar os limites do MangaDex.")
-            print("Você pode ajustar a variável MAX_THREADS no início do script, mas faça isso com cautela.")
-            print(f"Um pequeno delay de {CHAPTER_DOWNLOAD_DELAY} segundos será adicionado entre o download de cada capítulo.")
+            print("\n⚠️ Attention: The default value of MAX_THREADS has been set to 4 to respect MangaDex limits.")
+            print("You can adjust the MAX_THREADS variable at the beginning of the script, but do so with caution.")
+            print(f"A small delay of {CHAPTER_DOWNLOAD_DELAY} seconds will be added between downloading each chapter.")
 
             for i, chap in enumerate(selected):
-                print(f"\n📥 Downloading Chapter {chap['number']} and creating PDF...")
+                print(f"\n📥 Downloading images for Chapter {chap['number']}...")
                 image_paths, temp_dir = download_chapter_images(chap["id"], manga_download_dir, chap["number"])
                 if image_paths:
-                    pdf_filename = f"Chapter_{chap['number']}.pdf"
-                    pdf_output_path = os.path.join(manga_download_dir, pdf_filename)
-                    if create_pdf(image_paths, pdf_output_path):
-                        print(f"✅ Chapter {chap['number']} saved as {pdf_filename}")
-                    else:
-                        print(f"❌ Error creating PDF for Chapter {chap['number']}.")
-                    # Clean up temporary image directory
-                    for img_path in image_paths:
-                        try:
-                            os.remove(img_path)
-                        except OSError as e:
-                            print(f"Error deleting temporary image {img_path}: {e}")
-                    try:
-                        os.rmdir(temp_dir)
-                    except OSError as e:
-                        print(f"Error deleting temporary directory {temp_dir}: {e}")
+                    print(f"✅ Successfully downloaded images for Chapter {chap['number']} to: {temp_dir}")
+                    # Clean up temporary image directory (optional, you might want to keep them)
+                    # for img_path in image_paths:
+                    #     try:
+                    #         os.remove(img_path)
+                    #     except OSError as e:
+                    #         print(f"Error deleting temporary image {img_path}: {e}")
+                    # try:
+                    #     os.rmdir(temp_dir)
+                    # except OSError as e:
+                    #     print(f"Error deleting temporary directory {temp_dir}: {e}")
                 else:
                     print(f"⚠️ No images downloaded for Chapter {chap['number']}.")
 
-                if i < len(selected) - 1: # Adiciona delay entre os capítulos
-                    print(f"⏳ Aguardando {CHAPTER_DOWNLOAD_DELAY} segundos antes de baixar o próximo capítulo...")
+                if i < len(selected) - 1: # Add delay between chapters
+                    print(f"⏳ Waiting for {CHAPTER_DOWNLOAD_DELAY} seconds before downloading the next chapter...")
                     time.sleep(CHAPTER_DOWNLOAD_DELAY)
 
             if not args.manga: # Only ask to search again if not run from CLI
