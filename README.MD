@@ -78,10 +78,6 @@ You can also use command-line arguments to automate manga selection and chapter 
 ```bash
 python MDex.py --manga "Manga Title" --chapters "1 5 10-12 all"
 
-## Okay, let's refine the "Features" and "Contribution" sections to be more polished and informative in English.
-
-Here's a revised version:
-
 ## Features
 * Manga Search: Effortlessly find manga by title using intelligent fuzzy matching.
 * Chapter List: Displays a clear list of available chapters in the selected language.
