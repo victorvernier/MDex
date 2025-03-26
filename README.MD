@@ -1,94 +1,99 @@
-# MDex - Manga Downloader
+# **MDex - Manga Downloader** 📖  
 
-**A Python script for downloading manga chapters from MangaDex, with the option to convert them to PDF files for easier reading.**
+> A Python script for downloading manga chapters from **MangaDex**, with an option to convert them into PDF files for easier reading.  
 
-## Overview
+## **📌 Overview**  
 
-MDex is a command-line tool written in Python that simplifies downloading manga chapters from the MangaDex API, offering features like manga searching, chapter selection, organized downloads, and optional PDF conversion for convenient reading on various devices.
+**MDex** is a command-line tool written in Python that simplifies downloading manga chapters from the **MangaDex API**.  
+It offers features such as **intelligent search**, **custom chapter selection**, **automatic download organization**, and an **optional PDF conversion** for an enhanced reading experience.  
 
-## Features
+---
 
-* **Manga Search:**
-    * Fuzzy matching allows you to find manga even with slight variations in the title.
-    * Displays similar manga titles when an exact match isn't found, improving search accuracy.
-* **Chapter Management:**
-    * Lists available chapters in the selected language.
-    * Download specific chapters, a range (e.g., 1-10), or all available chapters.
-* **High-Quality Downloads:**
-    * Downloads manga chapter images in high resolution.
-* **Organized File Structure:**
-    * Creates a dedicated folder for each manga in the `Downloads` directory.
-    * Each chapter is placed in its own subfolder, keeping your downloads organized.
-* **PDF Generation (Optional):**
-    * Generates a PDF file for each downloaded chapter.
-    * PDFs are optimized for reading on mobile devices and computers.
-    * Automatic page orientation and image fitting for a better reading experience.
-* **Language Selection:**
-    * Choose the download language.
-* **MangaDex Respect:**
-    * Includes a delay between chapter downloads to comply with MangaDex API limits.
-* **Post-Download Options:**
-    * Option to search for another manga or exit the program after completing a download.
+## **✨ Features**  
 
-## Requirements
+✅ **Intelligent Manga Search**  
+- Uses **fuzzy matching** to find manga titles even with minor variations.  
+- Suggests similar titles when an exact match isn't found.  
 
-* Python 3.6 or higher
-* Python Libraries:
-    * `requests`
-    * `fuzzywuzzy`
-    * `tqdm`
-    * `fpdf2`
-    * `Pillow` (PIL Fork)
-    * `inquirer`
+✅ **Chapter Management**  
+- Lists all available chapters in the selected language.  
+- Allows downloading specific chapters, a custom range (e.g., 1-10), or all available chapters.  
 
-## Installation
+✅ **High-Quality Downloads**  
+- Downloads chapter images in **original high resolution**, preserving image quality.  
 
-1.  **Clone the repository:**
+✅ **Organized File Structure**  
+- Creates a dedicated folder for each manga inside the `Downloads` directory.  
+- Each chapter is stored in its own subfolder, ensuring an organized collection.  
 
-    ```bash
-    git clone [https://github.com/victorvernier/MDex.git](https://github.com/victorvernier/MDex.git)
-    ```
+✅ **PDF Generation (Optional)**  
+- Creates a **single PDF file** for each downloaded chapter.  
+- PDFs are optimized for mobile and desktop reading, with **automatic page orientation and image fitting**.  
 
-2.  **Navigate to the project directory:**
+✅ **Language Selection**  
+- Allows choosing the preferred language before downloading.  
 
-    ```bash
-    cd MDex
-    ```
+✅ **MangaDex API Compliance**  
+- Implements a delay between downloads to **respect API rate limits and prevent bans**.  
 
-3.  **Install the dependencies:**
+✅ **Post-Download Actions**  
+- After a download is completed, you can either search for another manga or exit the program.  
 
-    ```bash
-    pip install -r requirements.txt
-    ```
+---
 
-## Usage
+## **📦 Requirements**  
 
-1.  **Run the script:**
+✔ **Python 3.6 or later**  
+✔ Required Python Libraries:  
 
-    ```bash
-    python MDex.py
-    ```
+```bash
+pip install -r requirements.txt
 
-2.  **Follow the prompts in the terminal to search for and download manga.**
+## **📦 List of Dependencies**  
 
-## Command Line Arguments
+- `requests`  
+- `fuzzywuzzy`  
+- `tqdm`  
+- `fpdf2`  
+- `Pillow` (PIL Fork)  
+- `inquirer`  
 
-You can also use command-line arguments to automate manga selection and chapter downloads:
+---
+
+## **⚙ Installation**  
+
+### 1️⃣ Clone the repository:  
+
+```bash
+git clone https://github.com/victorvernier/MDex.git
+
+## **⚙ Installation**  
+
+### 2️⃣ Navigate to the project directory:  
+
+```bash
+cd MDex
+
+###3️⃣ Install dependencies:
+
+pip install -r requirements.txt
+
+## **🚀 Usage**  
+
+### 2️⃣ Follow the prompts in the terminal to search and download manga.  
+
+---
+
+## **🔹 Command Line Arguments**  
+
+You can automate manga selection and chapter downloads using command-line arguments:  
 
 ```bash
 python MDex.py --manga "Manga Title" --chapters "1 5 10-12 all"
 
-## Features
-* Manga Search: Effortlessly find manga by title using intelligent fuzzy matching.
-* Chapter List: Displays a clear list of available chapters in the selected language.
-* High-Resolution Downloads: Obtain manga chapter images in their original, high-resolution quality.
-* Flexible Chapter Selection: Choose to download specific chapters, define a range (e.g., 1-10), or download all available chapters.
-* Organized Downloads: Manga are neatly organized into dedicated folders within the Downloads directory, with each chapter residing in its own subfolder containing the downloaded images.
-* PDF Generation (Optional): Generate a single PDF file for each downloaded chapter, optimized for comfortable reading on mobile devices and computers with automatic page orientation and image fitting.
-* Similar Manga Suggestions: If an exact manga title match isn't found, a list of similar titles is provided to aid your search.
-* Respectful Download Practices: Implements a delay between chapter downloads to adhere to MangaDex server rate limits.
-* Post-Download Actions: Offers the choice to search for another manga or exit the application upon completion of a download.
+## **💡 Contribution**  
 
-## Contribution
+Contributions are welcome! Feel free to open **issues** or submit **pull requests** to suggest improvements, report bugs, or add new features.  
+Please ensure your code follows the project's style and includes appropriate tests for new functionalities.  
 
-Contributions are welcome! Feel free to open issues or submit pull requests to suggest improvements, report bugs, or add new 1  features. Please ensure your code follows the project's coding style and includes appropriate tests if you are adding new functionality.
+📩 **Questions? Suggestions? Feel free to reach out!**  
