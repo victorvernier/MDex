@@ -1,10 +1,10 @@
 # MDex - Manga Downloader
 
-**A Python script for downloading manga chapters from MangaDex, with optional PDF conversion.**
+**A Python script for downloading manga chapters from MangaDex, with the option to convert them to PDF files for easier reading.**
 
 ## Overview
 
-MDex is a command-line tool written in Python that simplifies the process of downloading manga chapters from the MangaDex API. It offers features like manga searching, chapter selection, organized downloads, and optional PDF generation for convenient reading on various devices.
+MDex is a command-line tool written in Python that simplifies downloading manga chapters from the MangaDex API, offering features like manga searching, chapter selection, organized downloads, and optional PDF conversion for convenient reading on various devices.
 
 ## Features
 
