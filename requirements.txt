@@ -1,6 +1,10 @@
+# Dependency file for MDex.py
+
 requests
 fuzzywuzzy
 tqdm
-fpdf2
-Pillow
 inquirer
+Pillow
+python-levenshtein
+
+# Optional, but highly recommended for better fuzzywuzzy performance: python-levenshtein
