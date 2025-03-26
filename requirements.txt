@@ -3,3 +3,4 @@ fuzzywuzzy
 tqdm
 fpdf2
 Pillow
+inquirer
