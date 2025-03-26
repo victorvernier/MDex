@@ -41,7 +41,6 @@ STRINGS = {
         "chapter_prefix": "• Capítulo {}",
         "chapter_selection_mode_prompt": "Selecione o modo de seleção de capítulos:",
         "enter_range_option": "Inserir intervalo (ex: 1-10, todos)",
-        "select_individually_option": "Selecionar individualmente",
         "chapters_range_prompt": "Digite os capítulos para baixar (separados por espaço, 'all' ou intervalo como XX-YY):",
         "chapter_selection_empty_error": "⚠️ A seleção de capítulos não pode estar vazia.",
         "invalid_chapter_range_error": "⚠️ Intervalo de capítulos inválido. Os números devem ser positivos e o início <= fim.",
@@ -83,7 +82,6 @@ STRINGS = {
         "chapter_prefix": "• Chapter {}",
         "chapter_selection_mode_prompt": "Select chapter selection mode:",
         "enter_range_option": "Enter range (e.g., 1-10, all)",
-        "select_individually_option": "Select individually",
         "chapters_range_prompt": "Enter the chapters to download (separated by space, 'all', or range like XX-YY):",
         "chapter_selection_empty_error": "⚠️ Chapter selection cannot be empty.",
         "invalid_chapter_range_error": "⚠️ Invalid chapter range. Numbers must be positive and start <= end.",
@@ -125,7 +123,6 @@ STRINGS = {
         "chapter_prefix": "• Capítulo {}",
         "chapter_selection_mode_prompt": "Seleccione el modo de selección de capítulos:",
         "enter_range_option": "Ingrese el rango (ej: 1-10, todos)",
-        "select_individually_option": "Seleccionar individualmente",
         "chapters_range_prompt": "Ingrese los capítulos para descargar (separados por espacio, 'all' o rango como XX-YY):",
         "chapter_selection_empty_error": "⚠️ La selección de capítulos no puede estar vacía.",
         "invalid_chapter_range_error": "⚠️ Rango de capítulos inválido. Los números deben ser positivos y el inicio <= fin.",
@@ -312,7 +309,7 @@ def select_chapters_interactive(chapters):
         return []
 
     choices = [(f"{selected_strings['chapter_prefix'].format(chap['number'])}", chap) for chap in
-               chapters]
+                chapters]
     questions = [
         inquirer.Checkbox(
             'selected_chapters',
@@ -393,11 +390,10 @@ def main():
         else:
             questions = [
                 inquirer.List('chapter_selection_mode',
-                              message=selected_strings["chapter_selection_mode_prompt"],
-                              choices=[
-                                  (selected_strings["enter_range_option"], 'range'),
-                                  (selected_strings["select_individually_option"], 'individual')
-                              ]),
+                             message=selected_strings["chapter_selection_mode_prompt"],
+                             choices=[
+                                 (selected_strings["enter_range_option"], 'range'),
+                             ]),
             ]
             selection_mode_answer = inquirer.prompt(questions)
 
@@ -432,10 +428,10 @@ def main():
                                 return
                             else:
                                 chapters_to_download = select_chapters_by_range(chapters, start_chapter,
-                                                                              end_chapter)
+                                                                                end_chapter)
                                 if not chapters_to_download:
                                     print(selected_strings["no_chapters_in_range"].format(start_chapter,
-                                                                                         end_chapter))
+                                                                                            end_chapter))
                                     return
                         except ValueError:
                             print(selected_strings["invalid_chapter_number_format_range"])
@@ -454,7 +450,7 @@ def main():
                         ', '.join(invalid_numbers)))
                     return
                 chapters_to_download = [chap for chap in chapters if
-                                       chap['number'] in chapter_numbers]
+                                         chap['number'] in chapter_numbers]
                 if not chapters_to_download and choice.lower() != 'all':
                     print(selected_strings["chapters_not_found"])
                     return
