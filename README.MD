@@ -78,17 +78,20 @@ You can also use command-line arguments to automate manga selection and chapter 
 ```bash
 python MDex.py --manga "Manga Title" --chapters "1 5 10-12 all"
 
-## Features
+## Okay, let's refine the "Features" and "Contribution" sections to be more polished and informative in English.
 
-* Manga Search: Searches for manga by title using fuzzy matching.
-* Chapter List: Lists the available chapters in English.
-* High-Resolution Downloads: Downloads manga chapter images in high resolution.
-* Specific Chapter Download: Option to download specific chapters, a range of chapters, or all available chapters.
-* Organized Folders: Creates a dedicated folder for each manga in the Downloads directory, with a subfolder for each chapter containing the downloaded images.
-* PDF Generation: (New) Generates a PDF file for each downloaded chapter, optimized for reading on mobile devices and computers with automatic page orientation and image fitting.
-* Similar Manga Titles: Lists similar manga titles if an exact match is not found.
-* Download Delay: Includes a delay between chapter downloads to respect MangaDex server limits.
-* Search Again: Option to search for another manga or exit the program after downloading.
+Here's a revised version:
+
+## Features
+* Manga Search: Effortlessly find manga by title using intelligent fuzzy matching.
+* Chapter List: Displays a clear list of available chapters in the selected language.
+* High-Resolution Downloads: Obtain manga chapter images in their original, high-resolution quality.
+* Flexible Chapter Selection: Choose to download specific chapters, define a range (e.g., 1-10), or download all available chapters.
+* Organized Downloads: Manga are neatly organized into dedicated folders within the Downloads directory, with each chapter residing in its own subfolder containing the downloaded images.
+* PDF Generation (Optional): Generate a single PDF file for each downloaded chapter, optimized for comfortable reading on mobile devices and computers with automatic page orientation and image fitting.
+* Similar Manga Suggestions: If an exact manga title match isn't found, a list of similar titles is provided to aid your search.
+* Respectful Download Practices: Implements a delay between chapter downloads to adhere to MangaDex server rate limits.
+* Post-Download Actions: Offers the choice to search for another manga or exit the application upon completion of a download.
 
 ## Contribution
 
