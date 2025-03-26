@@ -17,7 +17,7 @@ It offers features such as **intelligent search**, **custom chapter selection**,
 
 ✅ **Chapter Management**  
 - Lists all available chapters in the selected language.  
-- Allows downloading specific chapters, a custom range (e.g., 1-10), or all available chapters.  
+- Allows downloading specific chapters, a custom range (e.g., `1-10`), or all available chapters.  
 
 ✅ **High-Quality Downloads**  
 - Downloads chapter images in **original high resolution**, preserving image quality.  
@@ -48,6 +48,7 @@ It offers features such as **intelligent search**, **custom chapter selection**,
 
 ```bash
 pip install -r requirements.txt
+
 
 ## **📦 List of Dependencies**  
 
