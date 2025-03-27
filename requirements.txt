@@ -5,6 +5,7 @@ fuzzywuzzy
 tqdm
 inquirer
 Pillow
+fpdf2
 python-levenshtein
 
 # Optional, but highly recommended for better fuzzywuzzy performance: python-levenshtein
