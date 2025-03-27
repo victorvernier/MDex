@@ -7,7 +7,8 @@ import concurrent.futures
 from tqdm import tqdm
 import time
 import argparse
-# from PIL import Image # Kept commented as it's unused currently
+from PIL import Image
+from fpdf import FPDF
 import inquirer
 import traceback
 
@@ -15,9 +16,10 @@ import traceback
 API_BASE = "https://api.mangadex.org"
 DOWNLOAD_BASE_DIR = 'Downloads'
 MAX_RETRIES = 3
-MAX_THREADS = 4 # Adjust cautiously
-CHAPTER_DOWNLOAD_DELAY = 0.5 # Adjust cautiously
+MAX_THREADS = 4
+CHAPTER_DOWNLOAD_DELAY = 0.5
 CHAPTERS_PER_BATCH = 100
+ASSUMED_DPI = 72
 
 # --- Language Data ---
 LANGUAGE_CHOICES = [
@@ -29,7 +31,20 @@ LANGUAGE_CHOICES = [
 # --- String Dictionaries (Localization) ---
 STRINGS = {
     "pt-br": {
-        "select_language_prompt": "🌍 Selecione o idioma para download:",
+        # ... (outras strings inalteradas) ...
+        "creating_pdf": "📄 Criando PDF para o Capítulo {}...",
+        "pdf_creation_success": "✅ PDF criado com sucesso: {}",
+        "pdf_creation_error": "⚠️ Erro ao criar PDF para o Capítulo {}: {}",
+        "deleting_images": "🗑️ Removendo imagens originais para o Capítulo {}...",
+        "delete_img_error": "   ⚠️ Erro ao remover imagem {}: {}",
+        "delete_dir_error": "   ⚠️ Erro ao remover diretório {}: {}",
+        "download_summary_title": "\n--- Resumo da Criação de PDF ---", # Title updated
+        "summary_pdf_created": " PDF Criados: {}",             # New/Renamed
+        "summary_pdf_failed": " Falha na Criação de PDF: {}", # New/Renamed
+        "summary_skipped": " Capítulos Ignorados: {}",       # New key
+        "summary_footer": "--------------------------------\n", # Adjusted length
+        # ... (restante das strings) ...
+         "select_language_prompt": "🌍 Selecione o idioma para download:",
         "selected_language": "Idioma selecionado: {}",
         "manga_title_prompt": "Digite o nome do mangá:",
         "manga_title_empty_error": "⚠️ O título do mangá não pode estar vazio.",
@@ -69,7 +84,7 @@ STRINGS = {
         "process_chapter_failed": "⚠️ Falha ao processar o Capítulo {}.",
         "no_new_images": "Nenhuma imagem nova para baixar neste capítulo (já existem?).",
         "no_images_downloaded": "⚠️ Nenhuma imagem baixada para o Capítulo {}.",
-        "overall_download_progress": "Progresso Geral do Download",
+        "overall_download_progress": "Progresso Geral do Processamento", # Renamed progress bar title slightly
         "waiting_next_chapter": "⏳ Aguardando {} segundos...",
         "continue_prompt": "\nO que você gostaria de fazer agora?",
         "search_again_option": "Buscar outro mangá",
@@ -77,11 +92,6 @@ STRINGS = {
         "invalid_option": "Opção inválida.",
         "try_again_manga_not_found": "Tente novamente. Mangá não encontrado.",
         "overall_download_unit": "capítulo",
-        "download_summary_title": "\n--- Resumo do Download ---",
-        "summary_success": " Sucesso: {} capítulos",
-        "summary_no_images": " Sem Imagens: {} capítulos",
-        "summary_failed": " Falha: {} capítulos",
-        "summary_footer": "---------------------------\n",
         "exiting_message": "Saindo...",
         "program_finished_message": "Programa finalizado.",
         "encoding_warning": "Aviso: Codificação do terminal pode não ser UTF-8.",
@@ -90,6 +100,14 @@ STRINGS = {
         "unexpected_error_footer": "-------------------------",
     },
     "en": {
+        # --- Full English Strings with updated summary keys ---
+        "download_summary_title": "\n--- PDF Creation Summary ---",
+        "summary_pdf_created": " PDFs Created: {}",
+        "summary_pdf_failed": " PDF Creation Failed: {}",
+        "summary_skipped": " Chapters Skipped: {}",
+        "summary_footer": "--------------------------\n",
+        "overall_download_progress": "Overall Processing Progress",
+        # ... (rest of English strings) ...
         "select_language_prompt": "🌍 Select the download language:",
         "selected_language": "Selected language: {}",
         "manga_title_prompt": "Enter the manga name:",
@@ -130,7 +148,12 @@ STRINGS = {
         "process_chapter_failed": "⚠️ Failed to process Chapter {}.",
         "no_new_images": "No new images to download (already exist?).",
         "no_images_downloaded": "⚠️ No images downloaded for Chapter {}.",
-        "overall_download_progress": "Overall Download Progress",
+        "creating_pdf": "📄 Creating PDF for Chapter {}...",
+        "pdf_creation_success": "✅ PDF created successfully: {}",
+        "pdf_creation_error": "⚠️ Error creating PDF for Chapter {}: {}",
+        "deleting_images": "🗑️ Removing original images for Chapter {}...",
+        "delete_img_error": "   ⚠️ Error removing image {}: {}",
+        "delete_dir_error": "   ⚠️ Error removing directory {}: {}",
         "waiting_next_chapter": "⏳ Waiting {} seconds...",
         "continue_prompt": "\nWhat would you like to do next?",
         "search_again_option": "Search another manga",
@@ -138,11 +161,6 @@ STRINGS = {
         "invalid_option": "Invalid option.",
         "try_again_manga_not_found": "Try again. Manga not found.",
         "overall_download_unit": "chapter",
-        "download_summary_title": "\n--- Download Summary ---",
-        "summary_success": " Success: {} chapters",
-        "summary_no_images": " No Images: {} chapters",
-        "summary_failed": " Failed: {} chapters",
-        "summary_footer": "------------------------\n",
         "exiting_message": "Exiting...",
         "program_finished_message": "Program finished.",
         "encoding_warning": "Warning: Terminal encoding might not be UTF-8.",
@@ -151,16 +169,82 @@ STRINGS = {
         "unexpected_error_footer": "------------------------",
     },
     "es": {
-        # ... (Spanish strings omitted for brevity) ...
-        "select_language_prompt": "🌍 Seleccione el idioma para descargar:",
+        # --- Full Spanish Strings with updated summary keys ---
+        "download_summary_title": "\n--- Resumen de Creación de PDF ---",
+        "summary_pdf_created": " PDFs Creados: {}",
+        "summary_pdf_failed": " Fallo Creación PDF: {}",
+        "summary_skipped": " Capítulos Omitidos: {}",
+        "summary_footer": "----------------------------\n",
+        "overall_download_progress": "Progreso General Procesamiento",
+        # ... (rest of Spanish strings) ...
+         "select_language_prompt": "🌍 Seleccione el idioma para descargar:",
         "selected_language": "Idioma seleccionado: {}",
-        # etc...
+        "manga_title_prompt": "Ingrese el nombre del manga:",
+        "manga_title_empty_error": "⚠️ El título del manga no puede estar vacío.",
+        "search_manga_error": "Error al buscar el manga: {}",
+        "no_manga_found": "No se encontró ningún manga con el nombre: {}",
+        "manga_found": "📚 Manga encontrado: {}",
+        "no_exact_match": "No se encontró una coincidencia exacta para '{}'. Resultados similares:",
+        "fetching_chapters": "🔍 Buscando capítulos",
+        "chapter": "capítulo",
+        "search_chapters_error": "Error al buscar capítulos: {}",
+        "unexpected_chapter_error": "Error inesperado al buscar capítulos: {}",
+        "no_chapters_available": "⚠️ No hay capítulos disponibles en el idioma seleccionado ({}).",
+        "available_chapters": "\n📖 Capítulos disponibles:",
+        "chapter_prefix": "• Capítulo {}",
+        "chapters_range_prompt": "Ingrese los capítulos (ej: 1 5 10.5), 'all'/'todos', o rango (ej: 20-25):",
+        "chapter_selection_empty_error": "⚠️ La selección de capítulos no puede estar vacía.",
+        "invalid_chapter_range_error": "⚠️ Rango de capítulos inválido. Números >= 0 y inicio <= fin.",
+        "no_chapters_in_range": "⚠️ No se encontraron capítulos en el rango {}-{}.",
+        "invalid_chapter_number_format_range": "⚠️ Formato de número de capítulo inválido en el rango.",
+        "invalid_range_format": "⚠️ Formato de rango inválido ({}). Use XX-YY.",
+        "invalid_chapter_number_provided": "⚠️ Entrada(s) de capítulo(s) inválida(s): {}. Ingrese números >= 0, 'all'/'todos' o rangos.",
+        "chapters_not_found": "⚠️ No se encontraron capítulo(s) en la lista: {}.",
+        "no_chapters_selected": "⚠️ No se seleccionaron capítulos válidos para descargar.",
+        "downloading_images_chapter": "\n📥 Descargando imágenes para el Capítulo {}...",
+        "search_image_server_error": "Error al buscar el servidor de imágenes: {}",
+        "unexpected_image_server_error": "Error inesperado al obtener el servidor de imágenes: {}",
+        "image_server_api_error": "La API no devolvió el estado 'ok' para el servidor: {}",
+        "image_server_incomplete_response": "Error: Respuesta incompleta de la API del servidor de imágenes.",
+        "image_hash_files_missing": "Error: Hash o lista de archivos no encontrados en la respuesta de la API.",
+        "downloading_images": "🖼️ Descargando imágenes para el Capítulo {}",
+        "download_successful": "✅ Imágenes descargadas exitosamente para el Capítulo {} en: {}",
+        "download_failed": "⚠️ Falló la descarga de {} ({}), intento {}/{}...",
+        "download_timeout": "Timeout al descargar {}, intento {}/{}...",
+        "unexpected_download_error": "Error inesperado al descargar {}: {}",
+        "final_download_failed": "⚠️ Fallo final al descargar {}",
+        "empty_dir_removed": "   Directorio vacío eliminado: {}",
+        "process_chapter_failed": "⚠️ Falló el procesamiento del Capítulo {}.",
+        "no_new_images": "No hay imágenes nuevas para descargar en este capítulo (¿ya existen?).",
+        "no_images_downloaded": "⚠️ No se descargaron imágenes para el Capítulo {}.",
+        "creating_pdf": "📄 Creando PDF para el Capítulo {}...",
+        "pdf_creation_success": "✅ PDF creado con éxito: {}",
+        "pdf_creation_error": "⚠️ Error al crear PDF para el Capítulo {}: {}",
+        "deleting_images": "🗑️ Eliminando imágenes originales para el Capítulo {}...",
+        "delete_img_error": "   ⚠️ Error al eliminar imagen {}: {}",
+        "delete_dir_error": "   ⚠️ Error al eliminar directorio {}: {}",
+        "waiting_next_chapter": "⏳ Esperando {} segundos...",
+        "continue_prompt": "\n¿Qué le gustaría hacer ahora?",
+        "search_again_option": "Buscar otro manga",
+        "exit_option": "Salir",
+        "invalid_option": "Opción inválida.",
+        "try_again_manga_not_found": "Intente nuevamente. Manga no encontrado.",
+        "overall_download_unit": "capítulo",
+        "exiting_message": "Saliendo...",
+        "program_finished_message": "Programa finalizado.",
+        "encoding_warning": "Advertencia: Codificación del terminal puede no ser UTF-8.",
+        "unexpected_error_title": "\n--- ERROR INESPERADO ---",
+        "unexpected_error_message": "Error no controlado: {}",
+        "unexpected_error_footer": "-------------------------",
     },
 }
 
 selected_strings = STRINGS["pt-br"]
 
 # --- Function Definitions ---
+# (select_language, search_manga, sort_key, get_chapters, download_image,
+#  download_chapter_images, is_valid_chapter_number_string, select_chapters_by_range,
+#  parse_chapter_selection - unchanged from previous version)
 
 def select_language():
     """Prompts the user to select a language."""
@@ -168,7 +252,7 @@ def select_language():
     questions = [
         inquirer.List(
             'language_code',
-            message=STRINGS["en"]["select_language_prompt"], # Initial prompt always in English
+            message=STRINGS["en"]["select_language_prompt"],
             choices=LANGUAGE_CHOICES,
             carousel=True,
         ),
@@ -219,12 +303,11 @@ def search_manga(title, session):
                 if score > best_score:
                     best_score = score
                     best_match = manga
-                # Avoid adding duplicates to similar matches suggestions
                 if score >= 60 and not any(m[1]['id'] == manga['id'] for m in similar_matches):
                     display_title = manga["attributes"]["title"].get("en", manga_title_text)
                     similar_matches.append((score, manga, display_title))
 
-    if best_match and best_score >= 75: # Require a reasonably high score
+    if best_match and best_score >= 75:
         manga_display_title = best_match["attributes"]["title"].get("en") or \
                               next(iter(best_match["attributes"]["title"].values()), "Unknown_Title")
         print(selected_strings["manga_found"].format(manga_display_title))
@@ -244,7 +327,7 @@ def sort_key(chap):
     try:
         return float(chap['number']) if chap['number'] is not None else float('inf')
     except (ValueError, TypeError):
-        return float('inf') # Place non-numeric chapters like 'Oneshot' last
+        return float('inf')
 
 def get_chapters(manga_id, lang, session):
     """Fetches and returns a sorted list of available chapters."""
@@ -307,7 +390,7 @@ def download_image(img_url, img_path, session):
         img_resp = None
         try:
             img_resp = session.get(img_url, stream=True, timeout=25)
-            img_resp.raise_for_status() # Raise exception for bad status codes
+            img_resp.raise_for_status()
             with open(img_path, 'wb') as f:
                 for chunk in img_resp.iter_content(chunk_size=16384):
                     f.write(chunk)
@@ -323,7 +406,6 @@ def download_image(img_url, img_path, session):
              print(f"\n{selected_strings['download_timeout'].format(img_filename, attempt + 1, MAX_RETRIES)}")
              time.sleep(3 + attempt)
         except requests.RequestException as e:
-            # Don't retry client errors (e.g., 404 Not Found)
             if img_resp is not None and 400 <= img_resp.status_code < 500:
                  print(f"\n{selected_strings['download_failed'].format(img_filename, e, attempt + 1, MAX_RETRIES)} (Client Error {img_resp.status_code} - Not retrying)")
                  break
@@ -366,13 +448,11 @@ def download_chapter_images(chapter_id, save_folder, chapter_display, session):
          print(f"\n{selected_strings['image_hash_files_missing']}")
          return [], None
 
-    # --- FIX: Assign data_files to image_filenames ---
     image_filenames = data_files
-    # --- End of FIX ---
 
     safe_chars = set('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-.() ')
     safe_chapter_display = "".join(c for c in chapter_display if c in safe_chars).strip().replace(' ', '_')
-    if not safe_chapter_display: # Use chapter ID as fallback folder name
+    if not safe_chapter_display:
          safe_chapter_display = f"id_{chapter_id}"
     chapter_path = os.path.join(save_folder, f"Capitulo_{safe_chapter_display}")
     os.makedirs(chapter_path, exist_ok=True)
@@ -381,10 +461,10 @@ def download_chapter_images(chapter_id, save_folder, chapter_display, session):
     download_tasks = []
 
     for idx, img_file in enumerate(image_filenames):
-        try: # Attempt to keep original extension
+        try:
              img_extension = os.path.splitext(img_file)[1] if '.' in os.path.basename(img_file) else '.jpg'
         except Exception: img_extension = '.jpg'
-        img_filename = f"{idx + 1:03d}{img_extension}" # Pad with zeros (001, 002, ...)
+        img_filename = f"{idx + 1:03d}{img_extension}"
         img_path = os.path.join(chapter_path, img_filename)
         img_paths_to_check.append(img_path)
 
@@ -392,18 +472,17 @@ def download_chapter_images(chapter_id, save_folder, chapter_display, session):
             if os.path.exists(img_path):
                  try: os.remove(img_path)
                  except OSError: pass
-            img_url = f"{base_url}/data/{hash_val}/{img_file}" # Use high quality URL
+            img_url = f"{base_url}/data/{hash_val}/{img_file}"
             download_tasks.append((img_url, img_path))
 
     if download_tasks:
         with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
-            # Map futures to paths for potential error logging
             futures = {executor.submit(download_image, url, path, session): path for url, path in download_tasks}
             with tqdm(total=len(futures), desc=selected_strings["downloading_images"].format(chapter_display), leave=False) as pbar:
                  for future in concurrent.futures.as_completed(futures):
                     img_path_completed = futures[future]
                     try:
-                         future.result() # Check for exceptions
+                         future.result()
                     except Exception as exc:
                          print(f"\nError in download future {os.path.basename(img_path_completed)}: {exc}")
                     finally:
@@ -435,18 +514,18 @@ def select_chapters_by_range(chapters, start_chapter, end_chapter):
                 if start_chapter <= num <= end_chapter:
                     selected_chapters.append(chap)
             except (ValueError, TypeError):
-                pass # Ignore if 'number' isn't a valid float
+                pass
     return selected_chapters
 
 def parse_chapter_selection(chapters, selection_string):
     """Parses the user's chapter selection string ('all', 'todos', numbers, range)."""
-    if selection_string.lower() in ('all', 'todos'): # Handle both 'all' and 'todos'
+    if selection_string.lower() in ('all', 'todos'):
         return chapters
 
     selected_chapters_final = []
     potential_inputs = set()
     invalid_inputs = []
-    processed_ids = set() # Track chapter IDs to ensure uniqueness
+    processed_ids = set()
 
     parts = selection_string.split()
 
@@ -454,7 +533,6 @@ def parse_chapter_selection(chapters, selection_string):
         part = part.strip()
         if not part: continue
 
-        # Range check XX-YY
         if '-' in part and part.count('-') == 1:
             try:
                 start_str, end_str = part.split('-', 1)
@@ -477,22 +555,18 @@ def parse_chapter_selection(chapters, selection_string):
             except (ValueError, TypeError):
                  print(selected_strings["invalid_range_format"].format(part))
                  invalid_inputs.append(part)
-        # Otherwise, potential individual chapter number/name
         else:
              potential_inputs.add(part)
 
-    # Match individual inputs (numbers or names like 'Oneshot')
     matched_inputs = set()
     for chap in chapters:
         num_str = chap.get('number')
         display_str = chap.get('display')
         matched = False
-        # Check if 'number' string or 'display' string matches user input
         if num_str is not None and num_str in potential_inputs:
              matched = True
              matched_inputs.add(num_str)
         elif display_str in potential_inputs:
-             # Avoid double match if num_str and display_str are the same
              if not (num_str is not None and num_str == display_str and matched):
                   matched = True
                   matched_inputs.add(display_str)
@@ -501,7 +575,6 @@ def parse_chapter_selection(chapters, selection_string):
             selected_chapters_final.append(chap)
             processed_ids.add(chap['id'])
 
-    # Report any inputs that weren't matched or were invalid
     unmatched = potential_inputs - matched_inputs
     unmatched_but_valid_format = {inp for inp in unmatched if is_valid_chapter_number_string(inp) or '-' not in inp}
     invalid_numerics = {inp for inp in unmatched if not is_valid_chapter_number_string(inp) and '-' not in inp}
@@ -518,8 +591,8 @@ def parse_chapter_selection(chapters, selection_string):
 
 # --- Main Execution ---
 def main():
-    """Executes the main workflow: setup, search, select, download."""
-    parser = argparse.ArgumentParser(description="Downloads manga chapters from MangaDex.")
+    """Executes the main workflow: setup, search, select, download, and PDF creation."""
+    parser = argparse.ArgumentParser(description="Downloads manga chapters from MangaDex and creates PDFs.")
     parser.add_argument("--manga", "-m", type=str, help="The name of the manga to download.")
     parser.add_argument("--lang", "-l", type=str, help="Language code for chapters (e.g., pt-br, en, es).")
     parser.add_argument("--chapters", "-c", type=str,
@@ -537,9 +610,8 @@ def main():
     base_download_dir = args.dir
 
     session = requests.Session()
-    session.headers.update({'User-Agent': 'Python-MangaDex-Downloader/1.1'})
+    session.headers.update({'User-Agent': 'Python-MangaDex-Downloader/1.3-pdf-auto'})
 
-    # --- Language Selection ---
     language_code = None
     if args.lang:
         valid_codes = [code for _, code in LANGUAGE_CHOICES]
@@ -555,19 +627,17 @@ def main():
     else:
         language_code = select_language()
 
-    # --- Main Application Loop ---
     cli_mode = bool(args.manga)
     run_once_cli = False
 
-    # Outer loop to allow searching again in interactive mode
-    while True:
+    while True: # Outer loop allows searching again
         title = None
         if cli_mode:
             if not run_once_cli:
                  title = args.manga.strip()
                  run_once_cli = True
-            else: break # Exit loop after first CLI execution
-        else: # Interactive mode
+            else: break
+        else:
             questions = [inquirer.Text('manga_title', message=selected_strings["manga_title_prompt"])]
             try:
                 answers = inquirer.prompt(questions)
@@ -578,15 +648,13 @@ def main():
                  break
             if not title:
                 print(selected_strings["manga_title_empty_error"])
-                continue # Ask for title again
+                continue
 
-        # --- Manga Search ---
         manga_id, manga_title_sanitized = search_manga(title, session)
         if not manga_id:
             if cli_mode: break
             else: continue
 
-        # --- Chapter Fetching ---
         chapters = get_chapters(manga_id, language_code, session)
         if not chapters:
             lang_name = dict(LANGUAGE_CHOICES).get(language_code, language_code)
@@ -594,7 +662,6 @@ def main():
             if cli_mode: break
             else: continue
 
-        # --- Display Available Chapters ---
         print(selected_strings["available_chapters"])
         limit_display = 20
         if len(chapters) > limit_display:
@@ -604,11 +671,10 @@ def main():
         else:
              for chap in chapters: print(selected_strings["chapter_prefix"].format(chap['display']))
 
-        # --- Chapter Selection ---
         choice = None
         if cli_mode and args.chapters:
              choice = args.chapters.strip()
-             args.chapters = None # Clear CLI arg after first use
+             args.chapters = None
         elif not cli_mode:
             questions_range = [inquirer.Text('chapters_range', message=selected_strings["chapters_range_prompt"])]
             try:
@@ -624,14 +690,12 @@ def main():
             if cli_mode: break
             else: continue
 
-        # --- Parse Selection ---
         chapters_to_download = parse_chapter_selection(chapters, choice)
         if not chapters_to_download:
             print(selected_strings["no_chapters_selected"])
             if cli_mode: break
             else: continue
 
-        # --- Download Process ---
         manga_download_dir = os.path.join(base_download_dir, manga_title_sanitized)
         try:
             os.makedirs(manga_download_dir, exist_ok=True)
@@ -643,51 +707,128 @@ def main():
         print(f"\n⚠️ Notice: MAX_THREADS={MAX_THREADS}, Delay={CHAPTER_DOWNLOAD_DELAY}s.")
 
         total_chapters_to_download = len(chapters_to_download)
-        download_summary = {"success": 0, "failed": 0, "no_images": 0}
+        # --- Updated Summary Dictionary ---
+        download_summary = {"pdf_created": 0, "pdf_failed": 0, "skipped": 0}
 
         with tqdm(total=total_chapters_to_download, desc=selected_strings["overall_download_progress"],
                   unit=selected_strings["overall_download_unit"], leave=True) as overall_pbar:
             for i, chap in enumerate(chapters_to_download):
-                # Ensure progress bar updates even if chapter download fails
+                pdf_created_successfully = False
+                image_paths = []
+                chapter_dir_path = None
                 try:
                      print(selected_strings["downloading_images_chapter"].format(chap['display']))
                      image_paths, chapter_dir_path = download_chapter_images(chap["id"], manga_download_dir, chap["display"], session)
 
                      if chapter_dir_path:
-                         if image_paths: # Success
-                              print(selected_strings["download_successful"].format(chap['display'], chapter_dir_path))
-                              download_summary["success"] += 1
-                         else: # Directory created/exists, but no valid images downloaded/found
+                         if image_paths: # Images were downloaded/found successfully
+                              # Don't print image success, only PDF status if applicable
+                              # print(selected_strings["download_successful"].format(chap['display'], chapter_dir_path))
+
+                              # --- START Automatic PDF Creation Logic ---
+                              safe_chapter_display_pdf = "".join(c for c in chap['display'] if c.isalnum() or c in (' ', '_', '.', '-')).rstrip().replace(' ', '_')
+                              if not safe_chapter_display_pdf: safe_chapter_display_pdf = f"id_{chap['id']}"
+                              pdf_filename = os.path.join(manga_download_dir, f"Capitulo_{safe_chapter_display_pdf}.pdf")
+
+                              try:
+                                  print(selected_strings["creating_pdf"].format(chap['display']))
+                                  pdf = FPDF(unit="pt")
+
+                                  for image_path in image_paths:
+                                      try:
+                                          with Image.open(image_path) as img:
+                                              width_px, height_px = img.size
+                                              if width_px <= 0 or height_px <= 0:
+                                                  print(f"⚠️ Skipping invalid image (zero dimension): {os.path.basename(image_path)}")
+                                                  continue
+                                              img_dpi = img.info.get('dpi', (ASSUMED_DPI, ASSUMED_DPI))
+                                              if not isinstance(img_dpi, (tuple, list)) or len(img_dpi) < 2: img_dpi = (ASSUMED_DPI, ASSUMED_DPI)
+                                              dpi_x = img_dpi[0] if img_dpi[0] > 0 else ASSUMED_DPI
+                                              dpi_y = img_dpi[1] if img_dpi[1] > 0 else ASSUMED_DPI
+                                              width_pt = width_px * 72.0 / dpi_x
+                                              height_pt = height_px * 72.0 / dpi_y
+
+                                              orientation = 'L' if width_pt > height_pt else 'P'
+                                              pdf.add_page(orientation=orientation)
+                                              page_w_pt = pdf.w
+                                              page_h_pt = pdf.h
+
+                                              scale = 1
+                                              if width_pt > 0 and height_pt > 0:
+                                                  scale = min(page_w_pt / width_pt, page_h_pt / height_pt)
+                                              img_w_pt = width_pt * scale
+                                              img_h_pt = height_pt * scale
+
+                                              x_pos = (page_w_pt - img_w_pt) / 2
+                                              y_pos = (page_h_pt - img_h_pt) / 2
+
+                                              pdf.image(image_path, x=x_pos, y=y_pos, w=img_w_pt, h=img_h_pt)
+                                      except Exception as img_err:
+                                          print(f"⚠️ Error processing image {os.path.basename(image_path)} for PDF: {img_err}")
+
+                                  pdf.output(pdf_filename)
+                                  print(selected_strings["pdf_creation_success"].format(os.path.basename(pdf_filename)))
+                                  download_summary["pdf_created"] += 1 # Increment PDF created count
+                                  pdf_created_successfully = True
+
+                              except Exception as pdf_err:
+                                  print(selected_strings["pdf_creation_error"].format(chap['display'], pdf_err))
+                                  download_summary["pdf_failed"] += 1 # Increment PDF failed count
+                                  if os.path.exists(pdf_filename):
+                                      try: os.remove(pdf_filename)
+                                      except OSError: pass
+                              # --- END Automatic PDF Creation Logic ---
+
+                         else: # No images downloaded/found for this chapter
                               print(selected_strings["no_images_downloaded"].format(chap['display']))
-                              download_summary["no_images"] += 1
-                              try: # Attempt to remove empty dir
-                                   if chapter_dir_path and not os.listdir(chapter_dir_path):
+                              download_summary["skipped"] += 1 # Increment skipped count
+                              # Attempt to remove empty dir if created
+                              try:
+                                   if chapter_dir_path and os.path.exists(chapter_dir_path) and not os.listdir(chapter_dir_path):
                                         os.rmdir(chapter_dir_path)
                                         print(selected_strings["empty_dir_removed"].format(os.path.basename(chapter_dir_path)))
                               except OSError: pass
                      else: # Failed before creating directory (e.g., server API error)
                           print(selected_strings["process_chapter_failed"].format(chap['display']))
-                          download_summary["failed"] += 1
+                          download_summary["skipped"] += 1 # Increment skipped count
 
-                except Exception as chap_err: # Catch unexpected errors during chapter processing
+                     # --- START Automatic Image Deletion Logic ---
+                     if pdf_created_successfully:
+                         print(selected_strings["deleting_images"].format(chap['display']))
+                         try:
+                             for img_path in image_paths:
+                                 try:
+                                     if os.path.exists(img_path):
+                                         os.remove(img_path)
+                                 except OSError as e:
+                                     print(selected_strings["delete_img_error"].format(os.path.basename(img_path), e))
+                             try:
+                                 if chapter_dir_path and os.path.exists(chapter_dir_path):
+                                     os.rmdir(chapter_dir_path)
+                             except OSError as e:
+                                 print(selected_strings["delete_dir_error"].format(os.path.basename(chapter_dir_path), e))
+                         except Exception as del_err:
+                             print(f"⚠️ Unexpected error during image/folder deletion for chapter {chap['display']}: {del_err}")
+                     # --- END Automatic Image Deletion Logic ---
+
+                except Exception as chap_err:
                      print(f"Unexpected error processing chapter {chap.get('display', 'N/A')}: {chap_err}")
-                     download_summary["failed"] += 1
+                     download_summary["skipped"] += 1 # Increment skipped count for unexpected errors too
                      traceback.print_exc()
 
                 finally:
                      overall_pbar.update(1)
                      if i < len(chapters_to_download) - 1:
-                         # print(selected_strings["waiting_next_chapter"].format(CHAPTER_DOWNLOAD_DELAY)) # Optional: Reduce verbosity
                          time.sleep(CHAPTER_DOWNLOAD_DELAY)
 
-        # --- Print Summary ---
+        # --- Print Updated Summary ---
         print(selected_strings["download_summary_title"])
-        print(selected_strings["summary_success"].format(download_summary['success']))
-        print(selected_strings["summary_no_images"].format(download_summary['no_images']))
-        print(selected_strings["summary_failed"].format(download_summary['failed']))
+        print(selected_strings["summary_pdf_created"].format(download_summary['pdf_created']))
+        print(selected_strings["summary_pdf_failed"].format(download_summary['pdf_failed']))
+        print(selected_strings["summary_skipped"].format(download_summary['skipped'])) # Use new key
         print(selected_strings["summary_footer"])
 
-        # --- Ask to Continue (Interactive Mode Only) ---
+        # --- Ask to Continue ---
         if not cli_mode:
             questions_again = [
                 inquirer.List('continue_option',
@@ -702,30 +843,26 @@ def main():
                 continue_answer = inquirer.prompt(questions_again)
                 if not continue_answer or continue_answer['continue_option'] == 'exit':
                     print(selected_strings["exiting_message"])
-                    break # Exit the main application loop
-                # If 'search_again', the loop simply continues
+                    break
             except KeyboardInterrupt:
                  print(f"\n{selected_strings['exiting_message']}")
-                 break # Exit loop on Ctrl+C
+                 break
         else:
-            break # Exit loop after single CLI run
+            break
 
     print(selected_strings["program_finished_message"])
 
 # --- Script Entry Point ---
 if __name__ == "__main__":
-    # Encoding check warning
     if sys.stdout.encoding is None or sys.stdout.encoding.lower().replace('-', '') != 'utf8':
-        print(STRINGS['en']['encoding_warning']) # Use English for this warning
+        print(STRINGS['en']['encoding_warning'])
 
     try:
         main()
     except KeyboardInterrupt:
-        # Graceful exit on Ctrl+C
         print(f"\n{STRINGS['en']['exiting_message']}")
         sys.exit(0)
     except Exception as e:
-        # Fallback for any unexpected error during execution
         print(STRINGS['en']['unexpected_error_title'])
         print(STRINGS['en']['unexpected_error_message'].format(e))
         traceback.print_exc()
