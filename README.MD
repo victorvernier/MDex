@@ -45,7 +45,7 @@ Python script that downloads manga chapters from MangaDex (via API), automatical
     * `fuzzywuzzy` (for title matching)
     * `tqdm` (for progress bars)
     * `inquirer` (for interactive prompts)
-    * `Pillow` (PIL Fork - imported, usage context to be verified if needed for future image processing)
+    * `Pillow` (PIL Fork)
     * `fpdf2` (for automatic PDF generation)
     * `python-levenshtein` (improves `fuzzywuzzy` performance significantly)
 
